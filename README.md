@@ -15,3 +15,14 @@
 - 游戏管理: `GameMgr.ts` 初始化游戏&启动&重启
 - 玩家类: `Player.ts` 玩的核心逻辑和获胜判定
 - 地图类: `GameMap.ts` 渲染棋盘和棋子
+
+## 快速开始
+
+```sh
+git clone https://github.com/liaohui5/ts-Tic-Tac-Toe-demo
+cd ts-Tic-Tac-Toe-demo
+npm i
+npm run dev
+
+# http://localhost:8888
+```

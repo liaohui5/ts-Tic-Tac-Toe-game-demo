@@ -1,19 +1,21 @@
-"use strict";
-import GameMap, { IChess } from "./GameMap";
+import GameMap, { ChessBlock } from "./GameMap";
 import GameMgr from "./GameMgr";
 
 export default class Player {
-  // 游戏控制中心
-  public static gameMgr: GameMgr | null = null;
-
-  // 当前玩家是否是可以下棋状态
-  public isActive: boolean = false;
+  // 游戏控制中心实例对象
+  private static _gameMgr?: GameMgr;
+  public get gameMgr(): GameMgr {
+    if (!Player._gameMgr) {
+      Player._gameMgr = GameMgr.getInstance();
+    }
+    return Player._gameMgr;
+  }
 
   // 当前玩家的棋标记
   public mark: string = "";
 
   // 当前玩家下棋次数
-  public tapCount: number = 0;
+  public playerTapCount: number = 0;
 
   // 构造器
   public constructor(mark: string = "") {
@@ -23,47 +25,47 @@ export default class Player {
   /**
    * 下棋
    */
-  public tap(items: IChess[], item: IChess, gameMap: GameMap) {
-    this.tapCount++;
+  public tap(items: ChessBlock[], item: ChessBlock, gameMap: GameMap) {
+    // 判断当前格子位置是否有其他棋子
+    if (item.isTap) {
+      alert("当前位置已经有棋子了");
+      return;
+    }
 
-    // TODO: 可以单独写个方法, 比如放图片, 而不是直接赋值一个字符串
-    item.dom.innerText = item.mark = this.mark;
-    const gameMgr = Player.gameMgr!;
+    // 下完棋要更新棋盘样式
+    this.playerTapCount++;
+    gameMap.updateChessView(item, this);
+
+    const { gameMgr } = this;
 
     // 检测是否游戏获胜
-    if (this.checkWin(items, this)) {
-      setTimeout(() => {
-        alert(`${this.mark} 赢了, 点击确定重新开始`);
-        gameMgr.restart();
-      });
+    if (this.checkWin(items)) {
+      gameMgr.restart(`${this.mark} 赢了, 点击确定重新开始`);
       return;
     }
 
     // 检查是否平局
     if (this.checkEqual(gameMgr.p1!, gameMgr.p2!)) {
-      setTimeout(() => {
-        alert("平局, 点击确定重新开始");
-        gameMgr.restart();
-      });
+      gameMgr.restart("平局, 点击确定重新开始");
       return;
     }
 
     // 切换当前玩家
-    Player.gameMgr?.switchPlayer();
+    gameMgr.switchPlayer();
   }
 
   /**
    * 检测是否平局: 如果下了九次还没有获胜证明平局
    */
   public checkEqual(p1: Player, p2: Player): boolean {
-    return p1.tapCount + p2.tapCount === 9;
+    return p1.playerTapCount + p2.playerTapCount === 9;
   }
 
   /**
    * 检测是否获胜
    */
-  public checkWin(items: IChess[], player: Player): boolean {
-    // 检测
+  public checkWin(items: ChessBlock[]): boolean {
+    // 检测每一行是否是同一人下的棋子
     const check = (indexArrays: number[][]): boolean => {
       for (const indexes of indexArrays) {
         if (indexes.every((i) => items[i].mark === this.mark)) {

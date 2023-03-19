@@ -1,14 +1,15 @@
 import GameMgr from "./GameMgr";
+import Player from "./Player";
 
-// 棋子
-export interface IChess {
+// 棋盘格子
+export interface ChessBlock {
   isTap: boolean;
   mark: string;
   dom: HTMLDivElement;
 }
 
-// 创建一个棋子
-function createChess(dom: HTMLDivElement): IChess {
+// 创建一个棋盘格子
+function createChess(dom: HTMLDivElement): ChessBlock {
   return {
     isTap: false,
     mark: "",
@@ -17,30 +18,46 @@ function createChess(dom: HTMLDivElement): IChess {
 }
 
 export default class GameMap {
-  // 所有棋子
-  public items: Array<IChess> = [];
+  // 所有棋盘格子
+  private items: Array<ChessBlock> = [];
 
   // 放棋子的容器(棋盘)
-  public container: HTMLDivElement = document.createElement("div");
+  private container: HTMLDivElement = document.createElement("div");
 
   // 棋盘 & 棋子的 className
-  public containerClassName: string = "chess-container";
-  public chessClassName: string = "chess-item";
+  private containerClassName: string = "chess-container";
+  private chessClassName: string = "chess-item";
 
-  // 游戏控制中心
-  public static gameMgr: GameMgr | null = null;
+  // 初始化游戏控制中心
+  public constructor(public gameMgr: GameMgr) { }
+
+  /**
+   * 渲染地图 && 事件代理
+   */
+  public render(el: HTMLDivElement): void {
+    el.append(this.draw());
+    this.addEvents();
+  }
+
+  /**
+   * 下棋后,更新 dom 元素样式
+   * TODO: 美化UI, 放个图片什么的, 而不是直接放一个字符串
+   */
+  public updateChessView(item: ChessBlock, player: Player) {
+    item.dom.textContent = item.mark = player.mark;
+  }
 
   /**
    * draw 绘制地图
    */
-  public draw(): DocumentFragment {
+  private draw(): DocumentFragment {
     const frag: DocumentFragment = document.createDocumentFragment();
 
-    // 先创建一个容器
+    // container
     this.container.classList.add(this.containerClassName);
     frag.append(this.container);
 
-    // 在创建所有的块: 3 行 3 列
+    // blocks
     let item: HTMLDivElement;
     for (let i = 0; i < 3; i++) {
       for (let j = 0; j < 3; j++) {
@@ -56,14 +73,11 @@ export default class GameMap {
   /**
    * 事件代理: 监听事件
    */
-  public addEvents(): void {
-    const selector = `.${this.containerClassName} .${this.chessClassName}`;
-    const chessList = document.querySelectorAll(selector)!;
+  private addEvents(): void {
     this.container.addEventListener("click", (e: MouseEvent) => {
-      for (let i = 0; i < chessList.length; i++) {
-        const item = this.items[i];
+      for (const item of this.items) {
         if (e.target === item.dom) {
-          GameMap.gameMgr!.activedPlayer!.tap(this.items, item, this);
+          this.play(item);
           break;
         }
       }
@@ -71,9 +85,11 @@ export default class GameMap {
   }
 
   /**
-   * 事件代理: 渲染地图
+   * 执行下棋操作
    */
-  public render(el: HTMLDivElement): void {
-    el.append(this.draw());
+  private play(item: ChessBlock) {
+    // 检查当前位置已经有棋子了
+    this.gameMgr.activedPlayer.tap(this.items, item, this);
+    item.isTap = true;
   }
 }
